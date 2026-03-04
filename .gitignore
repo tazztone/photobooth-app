@@ -41,3 +41,8 @@ openapi.json
 # testing
 /experimental
 
+# IDE and environment
+.vscode/
+.python-version
+*tempCodeRunnerFile*
+
