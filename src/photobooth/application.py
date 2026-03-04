@@ -33,10 +33,7 @@ async def lifespan(_: FastAPI):
     default_sigint_handler = signal.getsignal(signal.SIGINT)
 
     def terminate_now(signum: int, frame: FrameType | None = None):
-        logger.debug("shutting down app via signal handler")
         sse_service.request_shutdown()
-
-        container.stop()
 
         if callable(default_sigint_handler):
             default_sigint_handler(signum, frame)
@@ -53,7 +50,10 @@ async def lifespan(_: FastAPI):
 
     # deliver app
     yield
+
     # Clean up
+    logger.info("Lifespan cleanup: stopping container...")
+    container.stop()
 
 
 def _create_app() -> FastAPI:

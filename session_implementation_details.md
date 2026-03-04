@@ -230,11 +230,13 @@ Run from the project root:
 
 | Script | Description |
 |--------|-------------|
-| `./scripts/run.sh` | Starts the main Photobooth application. |
-| `./scripts/dev.sh` | Starts the app in developer mode. |
-| `./scripts/install_comfyui.sh` | Installs or updates ComfyUI and its custom nodes/models. |
-| `./scripts/comfyui.sh` | Starts the managed ComfyUI server in standalone mode. |
-| `./scripts/test.sh` | Runs the dedicated test suite for the ComfyUI backend plugin. |
+| `./scripts/photobooth_start_main.sh` | Starts the main Photobooth application. |
+| `./scripts/photobooth_start_dev.sh` | Starts the app in developer mode. |
+| `./scripts/comfyui_setup_backend.sh` | Installs or updates ComfyUI and its custom nodes/models. |
+| `./scripts/comfyui_start_server.sh` | Starts the managed ComfyUI server in standalone mode. |
+| `./scripts/comfyui_run_tests.sh` | Runs the dedicated test suite for the ComfyUI backend plugin. |
+| `./scripts/comfyui_remove_backend.sh` | Uninstalls the managed ComfyUI instance and its data. |
+| `./scripts/kill_processes.sh` | Kills processes on ports 8000 and 18188 to free them up. |
 
 ### Poe Tasks (Alternative)
 Run with `uv run poe <command>`:
