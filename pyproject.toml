@@ -77,6 +77,7 @@ gpio_lights = 'photobooth.plugins.gpio_lights.gpio_lights'
 wled = 'photobooth.plugins.wled.wled'
 filter_pilgram2 = 'photobooth.plugins.filter_pilgram2.filter_pilgram2'
 synchronizer_rclone = 'photobooth.plugins.synchronizer_rclone.synchronizer_rclone'
+comfyui_backend = 'photobooth.plugins.comfyui_backend.comfyui_backend'
 
 
 [project.urls]
@@ -176,6 +177,9 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-name = ["photobooth", "web"]
+include = [
+  { path = "src/photobooth/plugins/comfyui_backend/workflows/*.json" }
+]
 
 # comment out for local development using editable installs
 [tool.uv.sources]
