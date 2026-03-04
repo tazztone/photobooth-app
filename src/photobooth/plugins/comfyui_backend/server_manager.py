@@ -14,15 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 class ServerManager:
-    _process: subprocess.Popen | None = None
-
     def __init__(self, server_path: Path):
         self.server_path = server_path
+        self._process: subprocess.Popen | None = None
 
     def is_installed(self) -> bool:
         return (self.server_path / "main.py").exists()
 
-    def install(self, progress_cb=None):
+    def install(self):
         """Install ComfyUI and required nodes/models.
         Zip-based installation to avoid git dependency.
         """
@@ -36,20 +35,24 @@ class ServerManager:
         venv_path = self.server_path / ".venv"
         subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
 
+        uv_path = shutil.which("uv")
+        if sys.platform == "win32":
+            pip_path = venv_path / "Scripts" / "pip.exe"
+        else:
+            pip_path = venv_path / "bin" / "pip"
+
+        env = {"VIRTUAL_ENV": str(venv_path.resolve())} if uv_path else None
+
         requirements_path = self.server_path / "requirements.txt"
         if requirements_path.exists():
             logger.info("Installing dependencies...")
 
-            uv_path = shutil.which("uv")
             if uv_path:
                 logger.info(f"Using uv found at {uv_path}")
                 cmd = [uv_path, "pip", "install", "-r", str(requirements_path.resolve())]
-                env = {"VIRTUAL_ENV": str(venv_path.resolve())}
             else:
                 logger.info("uv not found in PATH, falling back to pip")
-                pip_path = venv_path / "bin" / "pip"
                 cmd = [str(pip_path.resolve()), "install", "-r", str(requirements_path.resolve())]
-                env = None
 
             subprocess.run(cmd, cwd=self.server_path, env=env, check=True)
 
@@ -104,7 +107,11 @@ class ServerManager:
         else:
             listen_ip, port = host, "18188"
 
-        venv_python = self.server_path.resolve() / ".venv" / "bin" / "python"
+        if sys.platform == "win32":
+            venv_python = self.server_path.resolve() / ".venv" / "Scripts" / "python.exe"
+        else:
+            venv_python = self.server_path.resolve() / ".venv" / "bin" / "python"
+
         cmd = [str(venv_python), "main.py", "--listen", listen_ip, "--port", port]
         logger.info(f"Starting ComfyUI server: {' '.join(cmd)}")
         self._process = subprocess.Popen(
@@ -138,11 +145,6 @@ class ServerManager:
             if not r_name:
                 continue
 
-            # Decide if it's a tag or a branch (heuristic: starts with 'v' often means tag, but we can try both prefixes if needed)
-            # Actually, codeload.github.com works simpler: /zip/refs/heads/ or /zip/refs/tags/
-            # But the archive/refs/ format is also standard.
-
-            # We'll try refs/tags/ if it starts with 'v', else refs/heads/
             prefix = "tags" if r_name.startswith("v") else "heads"
             zip_url = f"{github_url.rstrip('/')}/archive/refs/{prefix}/{r_name}.zip"
 

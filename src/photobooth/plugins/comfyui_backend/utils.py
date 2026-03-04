@@ -7,6 +7,9 @@ def convert_frontend_to_api(workflow: dict) -> dict:
     """
     Converts a ComfyUI Frontend 'Save' JSON into an 'API Prompt' JSON.
     This allows users to save workflows directly in the UI and use them in the app.
+
+    If an 'ETN_LoadImageBase64' node is detected but left empty, it injects
+    the `__INPUT_B64__` sentinel which is replaced at runtime with the actual image.
     """
     if "nodes" not in workflow:
         # Already in API format or unknown
@@ -48,11 +51,15 @@ def convert_frontend_to_api(workflow: dict) -> dict:
                 # If image is empty string, default to placeholder
                 inputs["image"] = w_vals[0] if w_vals[0] else "__INPUT_B64__"
             elif class_type == "BiRefNetRMBG":
+                # Note: Widget mapping depends on the specific version of BiRefNetRMBG node.
+                # If the upstream node author changes widget order, this will map values incorrectly.
                 keys = ["model", "mask_blur", "mask_offset", "invert_output", "refine_foreground", "background", "background_color"]
                 for i, key in enumerate(keys):
                     if i < len(w_vals):
                         inputs[key] = w_vals[i]
             elif class_type == "RMBG":
+                # Note: Widget mapping depends on the specific version of RMBG node.
+                # If the upstream node author changes widget order, this will map values incorrectly.
                 keys = [
                     "model",
                     "sensitivity",

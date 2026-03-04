@@ -38,6 +38,10 @@ class ComfyUIClient:
     def run_workflow(self, image: Image.Image, workflow_json: dict) -> Image.Image:
         """Run a ComfyUI workflow with an input image.
         WARNING: must not be called from event loop thread.
+
+        The workflow JSON must use the `__INPUT_B64__` sentinel string
+        in place of the image data. This method will automatically encode
+        the `image` parameter and inject it where the sentinel is found.
         """
         # 1. Encode image to base64
         buffered = BytesIO()
@@ -122,6 +126,11 @@ class ComfyUIClient:
                                         base64_data = img_data.split(",")[1]
                                         img_bytes = base64.b64decode(base64_data)
                                         return Image.open(BytesIO(img_bytes))
+
+                    if history[prompt_id].get("status", {}).get("completed"):
+                        raise RuntimeError(
+                            f"ComfyUI prompt {prompt_id} completed successfully but produced no output images. Check your workflow's output node."
+                        )
 
                 time.sleep(0.5)
             except requests.HTTPError as exc:

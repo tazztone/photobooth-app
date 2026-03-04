@@ -30,18 +30,20 @@ REMOVE_CACHE: OrderedDict[str, Image.Image] = OrderedDict()
 MAX_CACHE = 3
 LOCK_CACHE = Lock()
 
+COMFYUI_PLUGIN_PREFIX = "ComfyuiBackend."
+
 
 def get_plugin_avail_filters():
     raw = list(chain(*pm.hook.mp_avail_filter()))
     # Sort ComfyUI filters to the top, then alphabetically
-    raw.sort(key=lambda f: (0 if f.startswith("ComfyuiBackend.") else 1, f))
+    raw.sort(key=lambda f: (0 if f.startswith(COMFYUI_PLUGIN_PREFIX) else 1, f))
     return (("original", "original"),) + tuple(((f, f"{f}")) for f in raw)
 
 
 def get_plugin_userselectable_filters():
     raw = list(chain(*pm.hook.mp_userselectable_filter()))
     # Sort ComfyUI filters to the top, then alphabetically
-    raw.sort(key=lambda f: (0 if f.startswith("ComfyuiBackend.") else 1, f))
+    raw.sort(key=lambda f: (0 if f.startswith(COMFYUI_PLUGIN_PREFIX) else 1, f))
     return (("original", "original"),) + tuple(((f, f"{f}")) for f in raw)
 
 

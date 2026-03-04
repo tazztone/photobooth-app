@@ -33,7 +33,7 @@ def main():
 
             # Intent is clear from running the command - ensure managed_server is enabled for boot
             if not config.manage_server:
-                logger.info("Enabling 'manage_server' in plugin configuration...")
+                logger.warning("Auto-enabling 'manage_server' in plugin configuration! ComfyUI will now start automatically with Photobooth.")
                 config.manage_server = True
                 config.persist()
 

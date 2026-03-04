@@ -22,6 +22,9 @@ COMFYUI_CACHE: OrderedDict[str, Image.Image] = OrderedDict()
 MAX_CACHE = 5
 LOCK_CACHE = Lock()
 
+# Max width to fast-path skip ComfyUI for live-view frames
+PREVIEW_SKIP_MAX_WIDTH = 800
+
 
 class ComfyuiBackend(BaseFilter[ComfyuiBackendConfig]):
     def __init__(self):
@@ -91,7 +94,7 @@ class ComfyuiBackend(BaseFilter[ComfyuiBackendConfig]):
     @hookimpl
     def mp_filter_pipeline_step(self, image: Image.Image, plugin_filter: str, preview: bool) -> Image.Image | None:
         # Fast-path for live-view stream: skip if preview is True AND image is small (likely camera steam)
-        if preview and image.width < 800:
+        if preview and image.width < PREVIEW_SKIP_MAX_WIDTH:
             return image
 
         workflow_name = self.deunify(plugin_filter)

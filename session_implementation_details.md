@@ -10,7 +10,8 @@ The plugin is structured as an optional extension that hooks into the `photoboot
 ### Core Hooks Implemented
 - **`mp_avail_filter`**: Discovers available filters at module import time. To avoid network latency or startup crashes when a ComfyUI server is down, this scans the local `workflows/` directory for `.json` files.
 - **`mp_userselectable_filter`**: Returns a subset of available workflows that are allowed to be selected by the end user via the UI, determined by the `userselectable_workflows` config value.
-- **`mp_filter_pipeline_step`**: The main execution block. Intercepts the image frame. Crucially handles a fast-path (`if preview: return None`) to ensure that heavy network payloads and inference times do not block the 15-30 FPS live-view feed.
+- **`Plugin Filter Sorting`**: Built-in support within `mediaprocessing` prioritizes `ComfyuiBackend.*` filters to display at the top of the gallery UI list.
+- **`mp_filter_pipeline_step`**: The main execution block. Intercepts the image frame. Crucially handles a fast-path (`if image.width < PREVIEW_SKIP_MAX_WIDTH`) to ensure that heavy network payloads do not block the live-view feed. Additionally, implements an **in-memory LRU cache** (size 5, based on image hash and workflow name) to ensure switching back to a previously applied filter is instantaneous.
 - **`init`, `start`, `stop`**: Standard lifecycle hooks.
 - **`get_stats`**: Implements `photobooth.models.genericstats.GenericStats` and `SubStats` to reflect the current reachability of the ComfyUI server in the admin dashboard.
 
@@ -42,9 +43,10 @@ Instead of `git clone`, the `ServerManager` uses the GitHub archive API (`/archi
   - *Note: RMBG node automatically handles model downloads on first execution.*
 
 ### Subprocess Execution
-- Starts the `main.py` entry point as an asynchronous subprocess.
-- Captures the `subprocess.Popen` object to guarantee that `stop()` can reliably terminate the server when the photobooth shuts down.
+- Starts the `main.py` entry point as an asynchronous subprocess targeting the provisioned `.venv` (`bin/python` on POSIX, `Scripts/python.exe` on Windows).
+- Captures the `subprocess.Popen` object as an instance attribute to guarantee that `stop()` can reliably terminate the server.
 - **Critical Safety Feature**: `install()` is purposefully disconnected from `init()`. It must be triggered manually via a CLI script or admin button to prevent the app from completely freezing while downloading gigabytes of models on startup.
+- **Custom Node Deployment**: The bundled `photobooth_io.py` containing `ETN_SaveImageBase64` is deployed to `custom_nodes/photobooth_nodes/` alongside a valid `__init__.py` to ensure ComfyUI correctly registers the module.
 
 ---
 
@@ -61,9 +63,11 @@ Uses a rapid 2-second timeout against `/system_stats`. This endpoint is fast and
 4. **Polling**: Enters a tight polling loop against `/history/{prompt_id}`.
 5. **Extraction**: Once finished, parses the JSON tree for the exact outputs of `ETN_GetImageAsBase64`, decodes the returned string, and reconstructs the `PIL.Image`.
 
-### Error Handling
+### Error Handling & Logging
 - Translates `500 Internal Server Error` responses into detailed Python exceptions.
 - Hard limits the polling loop matching the user-defined `timeout`.
+- Prevents silent timeouts by strictly checking `history[prompt_id].get("status", {}).get("completed")`. If the job finishes without generating an `images` array (e.g., node breakdown), it raises a clear error immediately.
+- Sanitizes logs automatically via `_truncate_b64_for_log` to prevent massive Base64 strings from crashing terminal output.
 
 ---
 
