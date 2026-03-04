@@ -80,7 +80,7 @@ class ServerManager:
         # 5. Deploy bundled custom nodes from the plugin
         bundled_nodes_src = Path(__file__).parent / "custom_nodes"
         if bundled_nodes_src.exists():
-            target_dir = custom_nodes_dir / "photobooth-nodes"
+            target_dir = custom_nodes_dir / "photobooth_nodes"
             target_dir.mkdir(parents=True, exist_ok=True)
             for node_file in bundled_nodes_src.glob("*.py"):
                 logger.info(f"Deploying bundled custom node {node_file.name} to {target_dir}")

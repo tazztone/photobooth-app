@@ -59,7 +59,17 @@ class ComfyUIClient:
             return obj
 
         modified_workflow = replace_placeholder(api_workflow)
-        logger.debug(f"Submitting prompt to ComfyUI: {json.dumps(modified_workflow)}")
+
+        def _truncate_b64_for_log(obj):
+            if isinstance(obj, dict):
+                return {k: _truncate_b64_for_log(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [_truncate_b64_for_log(x) for x in obj]
+            elif isinstance(obj, str) and len(obj) > 1000:
+                return obj[:50] + "...[truncated]"
+            return obj
+
+        logger.debug(f"Submitting prompt to ComfyUI: {json.dumps(_truncate_b64_for_log(modified_workflow))}")
 
         # 3. Handle explicit output node mapping
         output_node_id = modified_workflow.pop("__photobooth_output_node__", None)
