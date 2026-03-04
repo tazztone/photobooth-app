@@ -32,11 +32,17 @@ LOCK_CACHE = Lock()
 
 
 def get_plugin_avail_filters():
-    return (("original", "original"),) + tuple(((f, f"{f}")) for f in chain(*pm.hook.mp_avail_filter()))
+    raw = list(chain(*pm.hook.mp_avail_filter()))
+    # Sort ComfyUI filters to the top, then alphabetically
+    raw.sort(key=lambda f: (0 if f.startswith("ComfyuiBackend.") else 1, f))
+    return (("original", "original"),) + tuple(((f, f"{f}")) for f in raw)
 
 
 def get_plugin_userselectable_filters():
-    return (("original", "original"),) + tuple(((f, f"{f}")) for f in chain(*pm.hook.mp_userselectable_filter()))
+    raw = list(chain(*pm.hook.mp_userselectable_filter()))
+    # Sort ComfyUI filters to the top, then alphabetically
+    raw.sort(key=lambda f: (0 if f.startswith("ComfyuiBackend.") else 1, f))
+    return (("original", "original"),) + tuple(((f, f"{f}")) for f in raw)
 
 
 PluginFilters = Enum("PluginFilters", get_plugin_avail_filters(), type=str)

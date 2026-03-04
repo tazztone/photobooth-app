@@ -1,6 +1,9 @@
+import hashlib
 import json
 import logging
+from collections import OrderedDict
 from pathlib import Path
+from threading import Lock
 
 from PIL import Image
 
@@ -12,6 +15,12 @@ from .config import ComfyuiBackendConfig
 from .server_manager import ServerManager
 
 logger = logging.getLogger(__name__)
+
+# Cache for processed images (mirrors RemovebgStep pattern)
+# Key: "workflow_name:image_hash"
+COMFYUI_CACHE: OrderedDict[str, Image.Image] = OrderedDict()
+MAX_CACHE = 5
+LOCK_CACHE = Lock()
 
 
 class ComfyuiBackend(BaseFilter[ComfyuiBackendConfig]):
@@ -89,14 +98,40 @@ class ComfyuiBackend(BaseFilter[ComfyuiBackendConfig]):
         if workflow_name is None:
             return None
 
+        # Cache check
+        cache_key = f"{workflow_name}:{self._hash_image(image)}"
+        with LOCK_CACHE:
+            if cache_key in COMFYUI_CACHE:
+                logger.debug(f"ComfyUI cache hit for {workflow_name}")
+                COMFYUI_CACHE.move_to_end(cache_key)
+                return COMFYUI_CACHE[cache_key].copy()
+
         try:
             workflow_json = self._load_workflow(workflow_name)
             if not self._client:
                 raise RuntimeError("ComfyUIClient not initialized")
-            return self._client.run_workflow(image, workflow_json)
+
+            result = self._client.run_workflow(image, workflow_json)
+
+            # Store in cache
+            with LOCK_CACHE:
+                logger.debug(f"Caching ComfyUI result for {workflow_name}")
+                COMFYUI_CACHE[cache_key] = result.copy()
+                COMFYUI_CACHE.move_to_end(cache_key)
+                if len(COMFYUI_CACHE) > MAX_CACHE:
+                    COMFYUI_CACHE.popitem(last=False)
+
+            return result
         except Exception as exc:
             logger.error(f"ComfyUI processing failed for {workflow_name}: {exc}")
             raise
+
+    def _hash_image(self, img: Image.Image) -> str:
+        h = hashlib.sha256()
+        h.update(img.mode.encode())
+        h.update(str(img.size).encode())
+        h.update(img.tobytes())
+        return h.hexdigest()
 
     def _load_workflow(self, name: str) -> dict:
         wf_path = Path(__file__).parent / "workflows" / f"{name}.json"
