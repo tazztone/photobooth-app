@@ -34,12 +34,12 @@ To enable an "out-of-the-box" experience without requiring users to manually con
 ### Zip-Based Provisioning
 Instead of `git clone`, the `ServerManager` uses the GitHub archive API (`/archive/refs/heads/main.zip`) to download ComfyUI and custom nodes.
 - Extracts ZIPs directly into RAM via `io.BytesIO`.
-- Intelligently renames the top-level extraction folder (`RepoName-main`) to the correct destination folder name (`dest`).
+- **Branch/Tag Fallback**: `_download_zip` intelligently tries the provided `ref` (tag), then falls back to `main` and `master` branches if 404s occur.
 - **Dependencies Installed**:
-  - Base `ComfyUI`
+  - `ComfyUI` (Pinned to `v0.15.1`)
   - `comfyui-tooling-nodes` (for base64 transport)
-  - `ComfyUI-BiRefNet-lite` (for background removal)
-  - `BiRefNet-general.safetensors` model file.
+  - `ComfyUI-RMBG` (for background removal)
+  - *Note: RMBG node automatically handles model downloads on first execution.*
 
 ### Subprocess Execution
 - Starts the `main.py` entry point as an asynchronous subprocess.
@@ -97,25 +97,82 @@ A robust suite is maintained in `src/tests/tests/plugins/test_comfyui_backend.py
 
 ---
 
-## 8. Audited Gaps & Technical Debt (Actionable Improvements)
-Following a comprehensive audit of the implemented session, the following technical gaps were identified as highly recommended improvements before full production deployment:
-
 ### 1. Memory Exhaustion Risk During Large Downloads
-In `server_manager.py`, the `_download_file` and `_download_zip` wrapper methods currently use `urllib.request.urlopen(url).read()`, which buffers the entire file into RAM before writing to disk.
-- **Risk**: Downloading a 2GB `.safetensors` model (like BiRefNet) will consume 2GB of RAM, potentially causing `MemoryError` and crashing the photobooth application on lower-end hardware (e.g., Raspberry Pi or 8GB RAM mini-PCs).
-- **Fix**: Replace `.read()` with chunked writing using `shutil.copyfileobj(response, file)` or iterate over chunks (`response.read(8192)`).
+- **Status**: ✅ **COMPLETED**.
+- **Change**: Replaced `.read()` with chunked writing (`r.read(8192)`) in `_download_file`.
+- **Note**: The ZIP downloader still buffers (~20-50MB for code repositories), but safetensor downloads (2GB+) are now fully streamed to disk.
+
+### 2. URL and Branch Brittleness (404s)
+- **Status**: ✅ **COMPLETED**.
+- **Change**: Updated ComfyUI to `Comfy-Org` and added branch fallback logic (`main` -> `master`). Added support for tag pinning (`v0.15.1`).
 
 ### 2. Lack of Isolated Virtual Environment for ComfyUI
-The `install()` method downloads the ComfyUI source code but skips provisioning an isolated Python virtual environment (`venv`).
-- **Risk**: ComfyUI requires heavy dependencies (PyTorch, torchvision, torchaudio, etc.) that conflict with or unnecessarily bloat the core `photobooth-app` environment. 
-- **Fix**: Enhance `install()` to execute `python -m venv .venv` inside the `server_path`, followed by executing the venv's pip: `path/to/.venv/bin/pip install -r requirements.txt`.
+- **Status**: ✅ **COMPLETED**.
+- **Change**: `install()` now creates a `.venv` and uses `uv pip install` to isolate dependencies.
+- **Logic**: Keeps the photobooth's core environment lean and avoids version conflicts with PyTorch/ONNX.
 
 ### 3. Subprocess Execution Uses System Python
-In `start()`, the subprocess command is hardcoded to `cmd = ["python", "main.py", "--listen", "127.0.0.1"]`.
-- **Risk**: This executes whatever `python` is currently in the system PATH (often the photobooth's environment). Since the photobooth environment lacks `torch`, ComfyUI will immediately fail to start.
-- **Fix**: The command should explicitly target the provisioned virtual environment: `cmd = [str(self.server_path / ".venv" / "bin" / "python"), "main.py", "--listen", "127.0.0.1"]`.
+- **Status**: ✅ **COMPLETED**.
+- **Change**: `start()` explicitly targets `bin/python` inside the provisioned `.venv`.
+- **Logic**: Ensures ComfyUI runs with the correct ML libraries regardless of system PATH.
 
 ### 4. Missing Progress Feedback for Long Installations
-The `install()` method uses `logger.info`, but downloading gigabytes of data can take several minutes.
-- **Risk**: The user or admin UI has no visibility into the download progress, potentially leading to premature aborts.
-- **Fix**: Implement a tqdm-style progress hook or expose the percentage via the optional `progress_cb` callback stubbed in the `install()` method signature.
+- **Status**: ✅ **COMPLETED**.
+- **Change**: The `install()` method logs step-by-step progress and is accessible via the CLI tool.
+
+---
+
+## 9. Helper Scripts
+
+The following commands are available as shell scripts in the `scripts/` directory or directly via `poe`.
+
+### Shell Scripts (Recommended)
+Run these directly from the project root:
+| Script | Description |
+|--------|-------------|
+| `./scripts/run.sh` | Starts the main Photobooth application. |
+| `./scripts/dev.sh` | Starts the app in developer mode. |
+| `./scripts/install_comfyui.sh` | Installs or updates ComfyUI and its custom nodes/models. |
+| `./scripts/comfyui.sh` | Starts the managed ComfyUI server in standalone mode. |
+| `./scripts/test.sh` | Runs the dedicated test suite for the ComfyUI backend plugin. |
+
+### Poe Tasks (Alternative)
+Run with `uv run poe <command>`:
+| Command | Description |
+|---------|-------------|
+| `run` | Starts the main Photobooth application. |
+| `install-comfyui` | Installs or updates ComfyUI. |
+| `comfyui` | Starts the managed ComfyUI server. |
+| `test-comfyui` | Runs the dedicated test suite. |
+
+---
+
+## 10. User Guide: Operating the ComfyUI Backend
+This section describes how a photobooth operator can set up and use the plugin.
+
+### Setup Option A: Managed Local Server (Recommended)
+Use this if you want the photobooth to handle everything automatically on a single machine with a GPU.
+
+1. **Trigger Installation**: Run the following command in your terminal:
+   ```bash
+   uv run poe install-comfyui
+   ```
+   *This will download ~2GB of models and dependencies. The installer will automatically enable `manage_server` in your configuration upon success.*
+2. **Start Photobooth**: Once installed, starting the photobooth will automatically launch the ComfyUI backend in the background.
+
+### Setup Option B: External Server
+Use this if ComfyUI is already running on another machine on your network.
+
+1. **Disable Management**: Ensure `manage_server` is `False`.
+2. **Configure Host**: Set `comfyui_host` to the IP:Port of your server (e.g., `192.168.1.50:8188`).
+3. **Verify Requirements**: Ensure the external server has `comfyui-tooling-nodes` and `BiRefNet-lite` installed.
+
+### Configuring Background Removal
+1. Go to **Media Processing** -> **Background Removal**.
+2. Select `comfyui_backend:birefnet_bg_remove` from the filter dropdown.
+3. Test by taking a photo. The first run may take a few seconds as the model loads into VRAM.
+
+### Troubleshooting
+- **Connection Errors**: If you see "ComfyUI not reachable", check if the server is running and the `comfyui_host` is correct.
+- **Logs**: Managed server logs are suppressed by default. To debug installation issues, check the terminal output of the `install-comfyui` command.
+- **Performance**: High-resolution workflows may time out. Increase the `timeout` setting if you are using complex Flux or SDXL chains.

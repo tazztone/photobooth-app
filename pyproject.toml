@@ -157,6 +157,11 @@ default-groups = [
 
 # uv does not yet support [tool.pdm.scripts], so we skip this for now... https://github.com/astral-sh/uv/issues/5903
 [tool.poe.tasks]
+run = { cmd = "python -m photobooth" }
+dev = { cmd = "python -m photobooth --dev" }
+install-comfyui = { cmd = "python -m photobooth.plugins.comfyui_backend.install_cli --install" }
+comfyui = { cmd = "python -m photobooth.plugins.comfyui_backend.install_cli --start" }
+test-comfyui = { cmd = "uv run pytest src/tests/tests/plugins/test_comfyui_backend.py -v" }
 lint = [
   { cmd = "uv run pyright" },
   { cmd = "uv run ruff check" },

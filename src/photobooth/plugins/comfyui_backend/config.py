@@ -1,8 +1,11 @@
 from pathlib import Path
+
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
+
 from ... import CONFIG_PATH
 from ...services.config.baseconfig import BaseConfig
+
 
 class ComfyuiBackendConfig(BaseConfig):
     model_config = SettingsConfigDict(
@@ -12,7 +15,7 @@ class ComfyuiBackendConfig(BaseConfig):
     )
 
     comfyui_host: str = Field(
-        default="127.0.0.1:8188",
+        default="127.0.0.1:18188",
         description="ComfyUI server address (host:port).",
     )
     manage_server: bool = Field(
@@ -32,6 +35,6 @@ class ComfyuiBackendConfig(BaseConfig):
         description="Add ComfyUI workflows to the list of filters users can choose from.",
     )
     userselectable_workflows: list[str] = Field(
-        default=["birefnet_bg_remove"],
+        default=["rmbg_bg_remove"],
         description="List of workflow names (without .json extension) to make available to users.",
     )

@@ -1,0 +1,151 @@
+{
+    "__photobooth_output_node__": "1",
+    "id": "d6e0217c-8d02-4622-97dc-99d8b7fe2d49",
+    "revision": 0,
+    "last_node_id": 3,
+    "last_link_id": 2,
+    "nodes": [
+        {
+            "id": 1,
+            "type": "ETN_SaveImageBase64",
+            "pos": [
+                1787,
+                605
+            ],
+            "size": [
+                270,
+                58
+            ],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+                {
+                    "name": "images",
+                    "type": "IMAGE",
+                    "link": 1
+                }
+            ],
+            "outputs": [],
+            "properties": {
+                "Node name for S&R": "ETN_SaveImageBase64"
+            },
+            "widgets_values": [
+                "PNG"
+            ]
+        },
+        {
+            "id": 2,
+            "type": "ETN_LoadImageBase64",
+            "pos": [
+                1065,
+                603
+            ],
+            "size": [
+                270,
+                78
+            ],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "image",
+                    "type": "IMAGE",
+                    "links": [
+                        2
+                    ]
+                },
+                {
+                    "name": "mask",
+                    "type": "MASK",
+                    "links": null
+                }
+            ],
+            "properties": {
+                "Node name for S&R": "ETN_LoadImageBase64"
+            },
+            "widgets_values": [
+                ""
+            ]
+        },
+        {
+            "id": 3,
+            "type": "BiRefNetRMBG",
+            "pos": [
+                1396,
+                593
+            ],
+            "size": [
+                340,
+                244
+            ],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+                {
+                    "name": "image",
+                    "type": "IMAGE",
+                    "link": 2
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "IMAGE",
+                    "type": "IMAGE",
+                    "links": [
+                        1
+                    ]
+                },
+                {
+                    "name": "MASK",
+                    "type": "MASK",
+                    "links": null
+                },
+                {
+                    "name": "MASK_IMAGE",
+                    "type": "IMAGE",
+                    "links": null
+                }
+            ],
+            "properties": {
+                "Node name for S&R": "BiRefNetRMBG"
+            },
+            "widgets_values": [
+                "BiRefNet_lite",
+                0,
+                0,
+                false,
+                false,
+                "Color",
+                "#ffffff"
+            ],
+            "color": "#222e40",
+            "bgcolor": "#364254"
+        }
+    ],
+    "links": [
+        [
+            1,
+            3,
+            0,
+            1,
+            0,
+            "IMAGE"
+        ],
+        [
+            2,
+            2,
+            0,
+            3,
+            0,
+            "IMAGE"
+        ]
+    ],
+    "groups": [],
+    "config": {},
+    "extra": {},
+    "version": 0.4
+}

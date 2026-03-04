@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class Resource:
     name: str
@@ -8,6 +9,7 @@ class Resource:
     sha256: str = ""
     skip_hash: bool = False
 
+
 CUSTOM_NODES = [
     Resource(
         name="comfyui-tooling-nodes",
@@ -15,18 +17,12 @@ CUSTOM_NODES = [
         dest="custom_nodes/comfyui-tooling-nodes",
     ),
     Resource(
-        name="ComfyUI-BiRefNet-lite",
-        url="https://github.com/ZHO-ZHO-ZHO/ComfyUI-BiRefNet-lite",
-        dest="custom_nodes/ComfyUI-BiRefNet-lite",
+        name="ComfyUI-RMBG",
+        url="https://github.com/1038lab/ComfyUI-RMBG",
+        dest="custom_nodes/ComfyUI-RMBG",
     ),
 ]
 
 MODELS = [
-    Resource(
-        name="BiRefNet-general",
-        url="https://huggingface.co/ZhengPeng7/BiRefNet/resolve/main/model.safetensors",
-        dest="models/segmentation/BiRefNet-general.safetensors",
-        sha256="",
-        skip_hash=True,  # TODO: compute before production merge
-    ),
+    # RMBG node downloads its own models on first run
 ]
