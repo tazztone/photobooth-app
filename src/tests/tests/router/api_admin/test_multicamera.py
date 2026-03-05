@@ -41,9 +41,10 @@ def test_delete_calibration_success(mock_cu, client_authenticated: TestClient):
     mock_cu.return_value.delete_calibration_data.assert_called()
 
 
-@patch("photobooth.routers.api_admin.multicamera.SimpleCalibrationUtil")
 @patch("photobooth.routers.api_admin.multicamera.get_detector")
-def test_post_calibrate_all_success(mock_get_detector, mock_cu, client_authenticated: TestClient, tmp_path: Path):
+@patch("photobooth.routers.api_admin.multicamera.SimpleCalibrationUtil")
+@patch("photobooth.routers.api_admin.multicamera.filenames_sanitize", side_effect=lambda x: x)
+def test_post_calibrate_all_success(mock_sanitize, mock_cu, mock_get_detector, client_authenticated: TestClient, tmp_path: Path):
     # Fake calibration util methods
     mock_cu.return_value.calibrate_all.return_value = None
     mock_cu.return_value.save_calibration_data.return_value = None
@@ -63,9 +64,10 @@ def test_post_calibrate_all_success(mock_get_detector, mock_cu, client_authentic
     assert response.json() == {"ok": True}
 
 
-@patch("photobooth.routers.api_admin.multicamera.SimpleCalibrationUtil")
 @patch("photobooth.routers.api_admin.multicamera.get_detector")
-def test_post_calibrate_all_failure(mock_get_detector, mock_cu, client_authenticated: TestClient, tmp_path: Path):
+@patch("photobooth.routers.api_admin.multicamera.SimpleCalibrationUtil")
+@patch("photobooth.routers.api_admin.multicamera.filenames_sanitize", side_effect=lambda x: x)
+def test_post_calibrate_all_failure(mock_sanitize, mock_cu, mock_get_detector, client_authenticated: TestClient, tmp_path: Path):
     mock_cu.return_value.calibrate_all.side_effect = ValueError("bad calibration")
     mock_get_detector.return_value = MagicMock()
 

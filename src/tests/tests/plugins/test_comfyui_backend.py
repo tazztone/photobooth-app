@@ -42,9 +42,10 @@ def test_mp_avail_filter(comfyui_plugin, tmp_path):
 
 
 def test_preview_fast_path(comfyui_plugin):
-    """Test that preview=True returns None immediately."""
-    result = comfyui_plugin.mp_filter_pipeline_step(Image.new("RGB", (10, 10)), "ComfyuiBackend.test", preview=True)
-    assert result is None
+    """Test that preview=True returns the original image immediately (fast-path)."""
+    img = Image.new("RGB", (10, 10))
+    result = comfyui_plugin.mp_filter_pipeline_step(img, "ComfyuiBackend.test", preview=True)
+    assert result is img
 
 
 def test_client_check_health(httpserver):

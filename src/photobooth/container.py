@@ -43,7 +43,8 @@ class Container:
 
         with self._lock_startstop:
             if self.is_started():
-                raise RuntimeError("Service already started")
+                logger.debug("Service already started, skipping...")
+                return False
 
             for service in self._service_list():
                 try:
@@ -58,13 +59,15 @@ class Container:
 
             logger.info(f"services status: {services_started}")
             logger.info("started container")
+            return True
 
     def stop(self):
         services_stopped = []
 
         with self._lock_startstop:
             if not self.is_started():
-                raise RuntimeError("Service already stopped")
+                logger.debug("Service already stopped, skipping...")
+                return False
 
             for service in reversed(self._service_list()):
                 try:
@@ -79,6 +82,7 @@ class Container:
 
             logger.info(f"services status: {services_stopped}")
             logger.info("stopped container")
+            return True
 
     def is_started(self):
         return self._container_started

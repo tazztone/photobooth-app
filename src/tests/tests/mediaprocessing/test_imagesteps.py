@@ -67,7 +67,10 @@ def test_validate_test_method_different():
 
 def test_pilgram_stage_get_filters():
     # in default all filter enabled
-    assert get_plugin_avail_filters() == get_plugin_userselectable_filters()
+    # we filter out ComfyuiBackend because it's configurable and might intentionally diverge
+    avail = [f for f in get_plugin_avail_filters() if not f[0].startswith("ComfyuiBackend.")]
+    selectable = [f for f in get_plugin_userselectable_filters() if not f[0].startswith("ComfyuiBackend.")]
+    assert set(avail) == set(selectable)
 
 
 def test_pilgram_stage(pil_image: Image.Image):
